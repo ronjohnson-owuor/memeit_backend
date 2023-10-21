@@ -7,6 +7,7 @@ use App\Models\Follower;
 use App\Models\Like;
 use App\Models\Notification;
 use App\Models\Post;
+use App\Models\Report;
 use App\Models\User;
 use Carbon\Carbon;
 use Dotenv\Exception\ValidationException;
@@ -123,16 +124,45 @@ class postController extends Controller
         $user_id = $user -> id;
         $post_to_be_deleted = Post::where('id',$postData['post_id'])
         ->where('post_owner_id',$user_id)->first();
+        
+        $likes_to_be_deleted = Like::where("post_id",$postData['post_id'])->get();
+        $comments_to_be_deleted = Comment::where("post_id",$postData['post_id'])->get();
+        $reports_to_be_deleted =  Report::where("video_id",$postData['post_id'])->get();
+        
         if(!$post_to_be_deleted){
             return response() -> json([
                 'message' => 'unable to delete post',
                 'success' => false,
             ]);
         }
+        
+        
+        /* delete all likes */
+        if($likes_to_be_deleted){
+            foreach ($likes_to_be_deleted as $likes) {
+                $likes->delete();
+            }
+        }
+        
+        // delete all comments related to the post
+        if($comments_to_be_deleted) {
+            foreach ($comments_to_be_deleted as $comments) {
+                $comments->delete();
+            }
+        }
+        
+        /* delete reports if any */
+        if($reports_to_be_deleted){
+            foreach ($reports_to_be_deleted as $report) {
+                $report->delete();
+            }
+        }
+        
+        /* delete the actual post now */
         $post_to_be_deleted->delete();
         Notification::create([
             "master_id" =>$user_id,
-            "message"=>"you deleted your post",
+            "message"=>"🚮you deleted a post",
             "read" =>false
             
         ]);
@@ -190,7 +220,8 @@ class postController extends Controller
     public function retrievepost(){
         $posts = Post::orderBy('id', 'DESC')->get();
         $all_post = [];
-        foreach ($posts as $post) {
+        if($posts){
+            foreach ($posts as $post) {
             $post_created_at  = Carbon::parse($post->created_at)->format("d-M-Y");
             $all_comments_of_a_post =[];
             $user = User::where('id',$post->post_owner_id)->first();
@@ -235,11 +266,18 @@ class postController extends Controller
             ];
             $all_post[]=$complete_post;
         }
-        return response() -> json([
+                return response() -> json([
             'message' => 'post retrieved',
             'success' => true,
             'data'=>$all_post
-        ]); 
+        ]);
+        }
+        return response() -> json([
+            'message' => 'post retrieved',
+            'success' => true,
+            'data'=>[]
+        ]);
+ 
     }
     
     
@@ -247,10 +285,13 @@ class postController extends Controller
         // for users which are signed in
         $user = Auth::user();
         $user_id = $user->id;
+        $all_post = [];
         $followers_list = Follower::where("follower_id",$user_id)->pluck('master_id');
         // get users where user is not already following
         $recommended_post = Post::whereIn('post_owner_id', $followers_list)->orderBy('id','DESC')->get();
-        foreach ($recommended_post as $post) {
+        
+        if($recommended_post){
+            foreach ($recommended_post as $post) {
             $post_created_at  = Carbon::parse($post->created_at)->format("d-M-Y");
             $all_comments_of_a_post =[];
             $user = User::where('id',$post->post_owner_id)->first();
@@ -300,6 +341,14 @@ class postController extends Controller
             'success' => true,
             'data'=>$all_post
         ]); 
+        }
+        
+        return response() -> json([
+            'message' => 'post retrieved',
+            'success' => true,
+            'data'=>[]
+        ]); 
+
     }
     
     

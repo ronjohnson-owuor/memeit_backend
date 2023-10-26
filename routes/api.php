@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\adsController;
 use App\Http\Controllers\followerController;
 use App\Http\Controllers\notificationController;
 use App\Http\Controllers\postController;
+use App\Http\Controllers\s3Controller;
 use App\Http\Controllers\userController;
 use App\Http\Controllers\videoController;
 use Illuminate\Support\Facades\Route;
@@ -15,6 +17,7 @@ Route::get("/retrieve-post", [postController::class, 'retrievepost']);
 Route::post("/get-user-profile", [UserController::class, 'getUserProfile']);
 Route::get("/follower-recommendation", [followerController::class, 'get_all_users']);
 Route::post("/all-users", [UserController::class, 'allusers']);
+Route::post("/adds3", [s3Controller::class, 'addTos3']);
  
 
 
@@ -23,6 +26,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get("/follower-recommendation-with-token", [followerController::class, 'get_all_users_registered']);
     Route::get("/post-recommendation", [postController::class, 'recommended_post']);
     Route::post("/create-post", [postController::class, 'addpost']);
+    Route::post("/publish-ad", [adsController::class, 'publishAd']);
     Route::post("/report-video", [videoController::class, 'reportVideo']);
     Route::post("/retrieve-reported-videos", [videoController::class, 'videos_for_the_reporter']);
     Route::post("/drop-charges", [videoController::class, 'drop_charges']);

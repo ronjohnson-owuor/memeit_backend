@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Advert;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -34,11 +35,9 @@ class adsController extends Controller
         $path='advertisement';
         $file_ext = $ad_file->getClientOriginalExtension();
         $newFilename = time() .'memeitfilesassets'.'.'.$file_ext;
-        // $ad_file->move(public_path($path), $newFilename);
-        
+        $ad_file->move(public_path($path), $newFilename);
         
         $ad_heading = $request -> ad_heading;
-        $ad_media = $request -> ad_media;
         $ad_tags = $request -> ad_tags;
         $ad_type = $request -> ad_type;
         $auto_renew = $request -> auto_renew;
@@ -54,7 +53,7 @@ class adsController extends Controller
             $ad_expiry_time = $ad_expiry_month;
         }
         
-        
+        						
         
         //database array 
         $data_to_db = (Object)[
@@ -66,7 +65,7 @@ class adsController extends Controller
             "ad_type" => $ad_type,
             "auto_renew" =>$auto_renew
          ];
+         Advert::create($data_to_db);
         return response() ->json($data_to_db);
-        
     }
 }

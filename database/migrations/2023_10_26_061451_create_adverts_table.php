@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string("ad_media");
             $table->string("ad_owner_id");
             $table->string("ad_tags");
+            $table->boolean("global");
+            $table->string("link");
             $table->timestamp("ad_expiry");
             $table->string("ad_type");
             $table->boolean("auto_renew");

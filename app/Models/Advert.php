@@ -13,6 +13,8 @@ class Advert extends Model
         "ad_media",
         "ad_owner_id",
         "ad_tags",
+        "global",
+        "link",
         "ad_expiry",
         "ad_type",
         "auto_renew"

@@ -18,6 +18,10 @@ Route::post("/get-user-profile", [UserController::class, 'getUserProfile']);
 Route::get("/follower-recommendation", [followerController::class, 'get_all_users']);
 Route::post("/all-users", [UserController::class, 'allusers']);
 Route::post("/adds3", [s3Controller::class, 'addTos3']);
+Route::post("/global-inbuilt", [adsController::class, 'inbuiltGlobal']);
+Route::post("/global-banner", [adsController::class, 'bannerGlobal']);
+Route::post("/home-banner", [adsController::class, 'bannerHome']);
+Route::post("/home-inbuilt", [adsController::class, 'inbuiltHome']);
  
 
 
@@ -39,11 +43,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post("/comment-post", [postController::class, 'commentpost']);
     Route::post("/delete-comment", [postController::class, 'deletecomment']);
     Route::get("/get-user", [UserController::class, 'getUser']);
-    
-    
-    
     Route::post("/manage-followers", [followerController::class, 'managefollowing']);
-    
     Route::post("/basic-profile-edit", [userController::class, 'basicprofileedit']);
     Route::post("/update-password", [userController::class, 'updatepassword']);
     Route::post("/update-profile", [userController::class, 'updateprofile']);

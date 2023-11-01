@@ -22,7 +22,7 @@ class adsController extends Controller
             
             $request ->validate([
                 "ad_heading" =>"required",
-                "ad_media" =>"required|mimes:jpg,png,jpeg,mp4,webem|file",
+                "ad_media" =>"required|mimes:jpg,png,jpeg|file",
                 "ad_tags" =>"required",
                 "ad_type" =>"required",
                 "auto_renew" =>"required",
@@ -110,10 +110,17 @@ class adsController extends Controller
         $complete_ad =[];
         foreach($advertisements as $advertisement){
             $ad_media = asset("advertisement/".$advertisement->ad_media);
+            $user = User::where("id",$advertisement->ad_owner_id) ->first();
             $advertisement->ad_media = $ad_media;
-            $expiry_date = $advertisement->ad_expiry;
-            // TODO:return only ads that have not expired;
-            $complete_ad[] = $advertisement;
+            $expiry_date = Carbon::parse($advertisement->ad_expiry);
+            $advertisement -> name = $user ->name;
+            $advertisement -> profile = asset("profiles/".$user ->profile);
+            $date_created = Carbon::parse($advertisement->created_at)->format("d-M-Y");
+            $advertisement -> date_created = $date_created;
+            $is_in_the_future = $expiry_date->isFuture();
+            if($is_in_the_future){
+             $complete_ad[] = $advertisement;    
+            } 
         }
         return response() -> json([
             "success"=> true,
@@ -130,10 +137,17 @@ class adsController extends Controller
         $complete_ad =[];
         foreach($advertisements as $advertisement){
             $ad_media = asset("advertisement/".$advertisement->ad_media);
+            $user = User::where("id",$advertisement->ad_owner_id) ->first();
             $advertisement->ad_media = $ad_media;
-            $expiry_date = $advertisement->ad_expiry;
-            // TODO:return only ads that have not expired;
-            $complete_ad[] = $advertisement;
+            $expiry_date = Carbon::parse($advertisement->ad_expiry);
+            $advertisement -> name = $user ->name;
+            $advertisement -> profile = asset("profiles/".$user ->profile);
+            $date_created = Carbon::parse($advertisement->created_at)->format("d-M-Y");
+            $advertisement -> date_created = $date_created;
+            $is_in_the_future = $expiry_date->isFuture();
+            if($is_in_the_future){
+             $complete_ad[] = $advertisement;    
+            } 
         }
         return response() -> json([
             "success"=> true,
@@ -147,12 +161,19 @@ class adsController extends Controller
         $advertisements = Advert::where("ad_type" ,"inbuilt")
         ->where("global",false) ->get();
         $complete_ad =[];
-        foreach($advertisements as $advertisement){
-            $ad_media = asset("advertisement/".$advertisement->ad_media);
+        foreach($advertisements as $advertisement) {
+            $ad_media = asset("advertisement/" . $advertisement->ad_media);
+            $user = User::where("id", $advertisement->ad_owner_id) ->first();
             $advertisement->ad_media = $ad_media;
-            $expiry_date = $advertisement->ad_expiry;
-            // TODO:return only ads that have not expired;
-            $complete_ad[] = $advertisement;
+            $expiry_date = Carbon::parse($advertisement->ad_expiry);
+            $advertisement -> name = $user ->name;
+            $advertisement -> profile = asset("profiles/" . $user ->profile);
+            $date_created = Carbon::parse($advertisement->created_at)->format("d-M-Y");
+            $advertisement -> date_created = $date_created;
+            $is_in_the_future = $expiry_date->isFuture();
+            if($is_in_the_future) {
+                $complete_ad[] = $advertisement;
+            }
         }
         return response() -> json([
             "success"=> true,
@@ -160,21 +181,69 @@ class adsController extends Controller
             ]);
     }
     
-    // retrieve banner home ads ->only show on the homepage
+    // retrieve banner home ads ->only shown on the homepage
     public function bannerHome(){
         $advertisements = Advert::where("ad_type" ,"banner")
         ->where("global",false) ->get();
         $complete_ad =[];
         foreach($advertisements as $advertisement){
             $ad_media = asset("advertisement/".$advertisement->ad_media);
+            $user = User::where("id",$advertisement->ad_owner_id) ->first();
             $advertisement->ad_media = $ad_media;
-            $expiry_date = $advertisement->ad_expiry;
-            // TODO:return only ads that have not expired;
-            $complete_ad[] = $advertisement;
+            $expiry_date = Carbon::parse($advertisement->ad_expiry);
+            $advertisement -> name = $user ->name;
+            $advertisement -> profile = asset("profiles/".$user ->profile);
+            $date_created = Carbon::parse($advertisement->created_at)->format("d-M-Y");
+            $advertisement -> date_created = $date_created;
+            $is_in_the_future = $expiry_date->isFuture();
+            if($is_in_the_future){
+             $complete_ad[] = $advertisement;    
+            } 
         }
         return response() -> json([
             "success"=> true,
             "data"=> $complete_ad
             ]);
-    }  
+    } 
+    
+    
+    /* get active ads for a user */
+    
+    public function active_expired_ads(){
+        $user = Auth::user();
+        $id = $user->id;
+        $all_ads=[];
+        $advertisements = Advert::where("ad_owner_id",$id)->get();
+        $active =[];
+        $expired =[];
+        foreach ($advertisements as $advertisement) {
+            $expiry = Carbon::parse($advertisement->ad_expiry);
+            if($expiry->isFuture()){
+                $advertisement->expired = false;
+                $advertisement->ad_media = asset("advertisement/".$advertisement->ad_media);
+                $active[] = $advertisement;
+                $all_ads[] = $advertisement;
+            }else{
+                $advertisement->expired = true;
+                $advertisement->ad_media = asset("advertisement/".$advertisement->ad_media);
+                $expired[] = $advertisement;
+                $all_ads[] = $advertisement;
+            }
+        }
+        $total_active = count($active);
+        $total_expired = count($expired);
+        return response() -> json([
+            "success"=> true,
+            "data"=> $all_ads,
+            "total_active" => $total_active,
+            "total_expired" => $total_expired
+            ]);
+    }
+    
+    
+    
+    
+    
+    
+    
 }

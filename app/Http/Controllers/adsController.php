@@ -7,6 +7,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class adsController extends Controller
@@ -40,10 +41,11 @@ class adsController extends Controller
         
         $user = Auth::user();
         $ad_file = $request -> file("ad_media");
-        $path='advertisement';
         $file_ext = $ad_file->getClientOriginalExtension();
         $newFilename = time() .'memeitfilesassets'.'.'.$file_ext;
-        $ad_file->move(public_path($path), $newFilename);
+        $filePath = "advertisements/".$newFilename;
+        Storage::disk('s3')->put($filePath,file_get_contents($ad_file),'public');
+        $path = Storage::disk('s3')->url($filePath);
         
         $ad_heading = $request -> ad_heading;
         $ad_tags = $request -> ad_tags;
@@ -78,7 +80,7 @@ class adsController extends Controller
         //database array 
         $data_to_db = [
             "ad_heading" => $ad_heading,
-            "ad_media" => $newFilename,
+            "ad_media" => $path,
             "ad_owner_id" => $ad_owner_id,
             "ad_tags" => $ad_tags,
             "global" =>$global,
@@ -109,12 +111,12 @@ class adsController extends Controller
         ->where("global",true) ->get();
         $complete_ad =[];
         foreach($advertisements as $advertisement){
-            $ad_media = asset("advertisement/".$advertisement->ad_media);
+            $ad_media = $advertisement->ad_media;
             $user = User::where("id",$advertisement->ad_owner_id) ->first();
             $advertisement->ad_media = $ad_media;
             $expiry_date = Carbon::parse($advertisement->ad_expiry);
             $advertisement -> name = $user ->name;
-            $advertisement -> profile = asset("profiles/".$user ->profile);
+            $advertisement -> profile = $user ->profile;
             $date_created = Carbon::parse($advertisement->created_at)->format("d-M-Y");
             $advertisement -> date_created = $date_created;
             $is_in_the_future = $expiry_date->isFuture();
@@ -136,12 +138,12 @@ class adsController extends Controller
         ->where("global",true) ->get();
         $complete_ad =[];
         foreach($advertisements as $advertisement){
-            $ad_media = asset("advertisement/".$advertisement->ad_media);
+            $ad_media = $advertisement->ad_media;
             $user = User::where("id",$advertisement->ad_owner_id) ->first();
             $advertisement->ad_media = $ad_media;
             $expiry_date = Carbon::parse($advertisement->ad_expiry);
             $advertisement -> name = $user ->name;
-            $advertisement -> profile = asset("profiles/".$user ->profile);
+            $advertisement -> profile = $user ->profile;
             $date_created = Carbon::parse($advertisement->created_at)->format("d-M-Y");
             $advertisement -> date_created = $date_created;
             $is_in_the_future = $expiry_date->isFuture();
@@ -162,12 +164,12 @@ class adsController extends Controller
         ->where("global",false) ->get();
         $complete_ad =[];
         foreach($advertisements as $advertisement) {
-            $ad_media = asset("advertisement/" . $advertisement->ad_media);
+            $ad_media = $advertisement->ad_media;
             $user = User::where("id", $advertisement->ad_owner_id) ->first();
             $advertisement->ad_media = $ad_media;
             $expiry_date = Carbon::parse($advertisement->ad_expiry);
             $advertisement -> name = $user ->name;
-            $advertisement -> profile = asset("profiles/" . $user ->profile);
+            $advertisement -> profile = $user ->profile;
             $date_created = Carbon::parse($advertisement->created_at)->format("d-M-Y");
             $advertisement -> date_created = $date_created;
             $is_in_the_future = $expiry_date->isFuture();
@@ -187,12 +189,12 @@ class adsController extends Controller
         ->where("global",false) ->get();
         $complete_ad =[];
         foreach($advertisements as $advertisement){
-            $ad_media = asset("advertisement/".$advertisement->ad_media);
+            $ad_media = $advertisement->ad_media;
             $user = User::where("id",$advertisement->ad_owner_id) ->first();
             $advertisement->ad_media = $ad_media;
             $expiry_date = Carbon::parse($advertisement->ad_expiry);
             $advertisement -> name = $user ->name;
-            $advertisement -> profile = asset("profiles/".$user ->profile);
+            $advertisement -> profile =$user ->profile;
             $date_created = Carbon::parse($advertisement->created_at)->format("d-M-Y");
             $advertisement -> date_created = $date_created;
             $is_in_the_future = $expiry_date->isFuture();
@@ -220,12 +222,10 @@ class adsController extends Controller
             $expiry = Carbon::parse($advertisement->ad_expiry);
             if($expiry->isFuture()){
                 $advertisement->expired = false;
-                $advertisement->ad_media = asset("advertisement/".$advertisement->ad_media);
                 $active[] = $advertisement;
                 $all_ads[] = $advertisement;
             }else{
                 $advertisement->expired = true;
-                $advertisement->ad_media = asset("advertisement/".$advertisement->ad_media);
                 $expired[] = $advertisement;
                 $all_ads[] = $advertisement;
             }
@@ -238,6 +238,108 @@ class adsController extends Controller
             "total_active" => $total_active,
             "total_expired" => $total_expired
             ]);
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    /* update advertisement */
+    public function updateAd(Request $request){
+        try{
+        $request ->validate([
+            "id" =>"required",
+            "ad_heading" =>"required",
+            "ad_tags" =>"required",
+            "auto_renew" =>"required",
+            "link" => "required"
+        ]); 
+        } catch(ValidationException $exe){
+            return response()->json([
+                "success" => false,
+                "message" =>"some input fields are blank"
+            ]);
+        }
+        
+        $to_be_update = Advert::where("id", $request ->id) ->first();
+        if($to_be_update){
+           $valid_advert = Carbon::parse($to_be_update->ad_expiry) ->isFuture();
+           if(!$valid_advert){
+            return response() ->json([
+                "success" =>false,
+                "message" =>"ad expired consider renewing it first"
+            ]);
+           }
+           
+                   
+        $ad_heading = $request -> ad_heading;
+        $ad_tags = $request -> ad_tags;
+        $auto_renew = $request -> auto_renew;
+        $link = $request -> link;
+        
+        //database array => this are the only things that can be changed 
+        if($auto_renew == "false"){
+            $auto_renew = false;
+        }else{
+            $auto_renew = true;
+        }
+        
+        $update_data = [
+            "ad_heading" => $ad_heading,
+            "ad_media" => $to_be_update->ad_media,
+            "ad_owner_id" => $to_be_update->ad_owner_id,
+            "ad_tags" => $ad_tags,
+            "global" =>$to_be_update-> global,
+            "link" => $link,
+            "ad_expiry" =>$to_be_update-> ad_expiry,
+            "ad_type" => $to_be_update-> ad_type,
+            "auto_renew" =>$auto_renew
+         ];
+           $to_be_update->update($update_data);
+
+           return response() ->json([
+            "success" => true,
+            "message" =>"advertisement has been updated"
+        ]);
+            
+        }else{
+            return response() -> json([
+                "success" => false,
+                "message" => "the ad is not found"
+            ]);
+        }
+
+        
+    }
+    
+    public function destroy(Request $request){
+        $ad_to_destroy = Advert::where("id",$request->id)->first();
+        $disk = Storage::disk('s3');
+        if($ad_to_destroy){
+            $ad_media = $ad_to_destroy ->ad_media;
+            if($disk->exists($ad_media)){
+              $disk -> delete($ad_media);  
+            }else{
+                return response()->json([
+                    "success"=>false,
+                    "message"=>"Advertisement Not Found"
+                    ]);
+            }
+            
+            $ad_to_destroy->delete();
+            return response() ->json([
+                "success" => true,
+                "message" =>"successfully deleted"
+            ]);
+        }else{
+            return response()->json([
+                "success"=>false,
+                "message"=>"Advertisement Not Found"
+                ]);
+        }
     }
     
     

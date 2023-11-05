@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use PhpParser\Node\Expr\Cast\Object_;
 
@@ -93,8 +94,9 @@ class userController extends Controller
     
     $image_to_be_uploaded = $request->file('profile');
     $newFilename = time() .'memeit'.'.'.$image_to_be_uploaded->getClientOriginalExtension();
-    $image_to_be_uploaded->move(public_path('profiles'), $newFilename);
-    
+    $filePath = "profiles/".$newFilename;
+    Storage::disk('s3')->put($filePath,file_get_contents($image_to_be_uploaded),'public');
+    $path = Storage::disk('s3')->url($filePath);
     $protected_password = bcrypt($userData['password']);
     $user = User::create([
         'name' => $userData['name'],
@@ -103,7 +105,7 @@ class userController extends Controller
         'phone' => $userData['phone'],
         'gender' => $userData['gender'],
         'status' => $userData['status'],
-        'profile' => $newFilename
+        'profile' => $path
     ]);
     
 
@@ -225,7 +227,7 @@ class userController extends Controller
                 $user_who_commented = User::where('id',$comment->user_id)->first(); 
                 $complete_comment = (Object)[
                     'user_name' => $user_who_commented ->name,
-                    'profile' => asset("/profiles/".$user_who_commented->profile),
+                    'profile' => $user_who_commented->profile,
                     'user_comment' => $comment->comment,
                     "created_at" =>$comment_created_at
                 ];
@@ -234,15 +236,15 @@ class userController extends Controller
             $media_path =null;
             if($post->media_type){
                 if($post->media_type == 1){
-                    $media_path = asset('videos/'.$post->post_media);
+                    $media_path = $post->post_media;
                 }else if($post->media_type== 2){
-                    $media_path = asset('images/'.$post->post_media);  
+                    $media_path = $post->post_media;  
                 }
             }
             $complete_post = (Object)[
                 'user_name' =>$user->name,
                 "created_at" =>$post_created_at,
-                'profile' => asset('profiles/'.$user->profile),
+                'profile' => $user->profile,
                 'post_description' => $post->post_description,
                 'post_media' => $media_path,
                 'id' =>$post ->id,
@@ -255,7 +257,7 @@ class userController extends Controller
         /* END */
         $user_profile = (Object)[
             "name" =>$user->name,
-            "profile" =>asset('/profiles/'.$user->profile),
+            "profile" =>$user->profile,
             "status" =>$user->status,
             "followers" =>$followers,
             "user_post" =>$all_post
@@ -289,7 +291,7 @@ class userController extends Controller
                 $user_who_commented = User::where('id',$comment->user_id)->first(); 
                 $complete_comment = (Object)[
                     'user_name' => $user_who_commented ->name,
-                    'profile' => asset("/profiles/".$user_who_commented->profile),
+                    'profile' => $user_who_commented->profile,
                     'user_comment' => $comment->comment,
                     "created_at" =>$comment_created_at
                 ];
@@ -298,15 +300,15 @@ class userController extends Controller
             $media_path =null;
             if($post->media_type){
                 if($post->media_type == 1){
-                    $media_path = asset('videos/'.$post->post_media);
+                    $media_path =$post->post_media;
                 }else if($post->media_type== 2){
-                    $media_path = asset('images/'.$post->post_media);  
+                    $media_path = $post->post_media;  
                 }
             }
             $complete_post = (Object)[
                 'user_name' => 'You',
                 "created_at" =>$post_created_at,
-                'profile' => asset('profiles/'.$user->profile),
+                'profile' => $user->profile,
                 'post_description' => $post->post_description,
                 'post_media' => $media_path,
                 'id' =>$post ->id,
@@ -321,7 +323,7 @@ class userController extends Controller
         $user = (Object)[
             "name" =>$user->name,
             "email" =>$user->email,
-            "profile" =>asset('/profiles/'.$user->profile),
+            "profile" =>$user->profile,
             "status" =>$user->status,
             "gender" =>$user ->gender,
             "phone" =>$user->phone,
@@ -353,18 +355,19 @@ class userController extends Controller
             $user = Auth::user();
             $currentProfile = $user->profile;
             if ($currentProfile) {
-                $imagePath = public_path('profiles/').basename($currentProfile);
-                if (file_exists($imagePath)) {
+                $disk = Storage::disk('s3');
+                if ($disk->exists($currentProfile)) {
                     // deletes image from the folder
-                    unlink($imagePath);
+                    $disk ->delete($currentProfile);
                 }
             }
-            
             $image = $request->file('new_profile');
             $newFilename =time().'memeit'.'.'.$image->getClientOriginalExtension();
-            $image->move(public_path('profiles'), $newFilename);
+            $filePath = "profiles/".$newFilename;
+            Storage::disk('s3')->put($filePath,file_get_contents($image),'public');
+            $path = Storage::disk('s3')->url($filePath);
             $userDataToUpdate = [
-                'profile' => $newFilename,
+                'profile' => $path,
             ];
             // the error👇🏿 is nothing just ignore it.
             $user->update($userDataToUpdate);
@@ -376,7 +379,7 @@ class userController extends Controller
             ]);
             return response()->json([
                 "message" =>"profile updated successfully",
-                "success"=>false
+                "success"=>true
             ]);
         }catch(\Throwable $th){
             return response()->json([
@@ -393,7 +396,7 @@ class userController extends Controller
         $user_profiles= User::all();
         $users=[];
         foreach($user_profiles as $user_profile){
-            $profile = asset("profiles/".$user_profile->profile);
+            $profile = $user_profile->profile;
             $required_info = (Object)[
                 "user_id" => $user_profile->id,
                 "user_name" => $user_profile->name,

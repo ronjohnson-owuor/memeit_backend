@@ -13,6 +13,7 @@ use Carbon\Carbon;
 use Dotenv\Exception\ValidationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class postController extends Controller
 {
@@ -66,10 +67,10 @@ class postController extends Controller
         if($media_file->isValid()){
             $mime = $media_file ->getMimeType();
             if(str_starts_with($mime,'image')){
-                $path='images';
+                $path=0;
                 $type=2;
             }elseif(str_starts_with($mime,'video')){
-                $path='videos';
+                $path=1;
                 $type=1;
             }else{
                 // if the video is not an image or a video then the user is trying to 
@@ -83,12 +84,19 @@ class postController extends Controller
         // set the path respectively to the media type
         $file_ext = $media_file->getClientOriginalExtension();
         $newFilename = time() .'memeitfilesassets'.'.'.$file_ext;
-        $media_file->move(public_path($path), $newFilename);
+        if($path == 0){
+            $filepath="images/".$newFilename; 
+        }else{
+            $filepath= "videos/".$newFilename;   
+        }
+        $disk = Storage::disk('s3');
+        $disk->put($filepath,file_get_contents($media_file),'public');
+        $newPath = $disk -> url($filepath);
         // insert to the database
             Post::create([
                 'post_description' => $postData['post_description'],
                 'post_owner_id' => $id,
-                'post_media' => $newFilename,
+                'post_media' => $newPath,
                 'media_type' => $type
             ]);
             Notification::create([
@@ -237,7 +245,7 @@ class postController extends Controller
                     'user_name' => $user_who_commented ->name,
                     "user_id"=>$comment->user_id,
                     "created_at"=> $comment_created_at,
-                    'profile' =>asset('profiles/'.$user_who_commented->profile),
+                    'profile' =>$user_who_commented->profile,
                     'user_comment' => $comment->comment
                 ];
                 $all_comments_of_a_post[]=$complete_comment;
@@ -246,17 +254,14 @@ class postController extends Controller
 
             $media_path =null;
             if($post->media_type){
-                if($post->media_type == 1){
-                    $media_path = asset('videos/'.$post->post_media);
-                }else if($post->media_type== 2){
-                    $media_path = asset('images/'.$post->post_media);  
-                }
+                $media_path = $post->post_media;
             }
+            
             $complete_post = (Object)[
                 'user_name' => $user ->name,
                 "user_id"=>$user->id,
                 "id" => $post->id,
-                'profile' => asset('profiles/'.$user->profile),
+                'profile' =>$user->profile,
                 "created_at"=> $post_created_at,
                 'post_description' => $post->post_description,
                 'post_media' => $media_path,
@@ -307,7 +312,7 @@ class postController extends Controller
                     'user_name' => $user_who_commented ->name,
                     "user_id"=>$comment->user_id,
                     "created_at"=> $comment_created_at,
-                    'profile' =>asset('profiles/'.$user_who_commented->profile),
+                    'profile' =>$user_who_commented->profile,
                     'user_comment' => $comment->comment
                 ];
                 $all_comments_of_a_post[]=$complete_comment;
@@ -316,17 +321,13 @@ class postController extends Controller
 
             $media_path =null;
             if($post->media_type){
-                if($post->media_type == 1){
-                    $media_path = asset('videos/'.$post->post_media);
-                }else if($post->media_type== 2){
-                    $media_path = asset('images/'.$post->post_media);  
-                }
+                    $media_path =$post->post_media;
             }
             $complete_post = (Object)[
                 'user_name' => $user ->name,
                 "user_id"=>$user->id,
                 "id" => $post->id,
-                'profile' => asset('profiles/'.$user->profile),
+                'profile' => $user->profile,
                 "created_at"=> $post_created_at,
                 'post_description' => $post->post_description,
                 'post_media' => $media_path,

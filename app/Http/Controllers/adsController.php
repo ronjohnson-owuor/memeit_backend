@@ -325,7 +325,7 @@ class adsController extends Controller
             }else{
                 return response()->json([
                     "success"=>false,
-                    "message"=>"Advertisement Not Found"
+                    "message"=>"we are trying to find the image make sure your internet is steady"
                     ]);
             }
             

@@ -59,7 +59,7 @@ class followerController extends Controller
         $user_profiles = User::inRandomOrder()->take(4)->get();
         $users=[];
         foreach($user_profiles as $user_profile){
-            $profile = asset("profiles/".$user_profile->profile);
+            $profile = $user_profile->profile;
             $required_info = (Object)[
                 "user_id" => $user_profile->id,
                 "user_name" => $user_profile->name,
@@ -86,7 +86,7 @@ class followerController extends Controller
         $user_profiles = User::whereNotIn('id', $already_following)->inRandomOrder()->take(4)->get();
         $users=[];
         foreach($user_profiles as $user_profile){
-            $profile = asset("profiles/".$user_profile->profile);
+            $profile = $user_profile->profile;
             $required_info = (Object)[
                 "user_id" => $user_profile->id,
                 "user_name" => $user_profile->name,

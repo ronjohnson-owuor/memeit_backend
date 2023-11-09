@@ -39,6 +39,8 @@ class adsController extends Controller
             ]);
         }
         
+        // duration set to one day
+        $duration = 0;
         $user = Auth::user();
         $ad_file = $request -> file("ad_media");
         $file_ext = $ad_file->getClientOriginalExtension();
@@ -63,6 +65,8 @@ class adsController extends Controller
             $ad_expiry_time = $ad_expiry_day;
         }else{
             $ad_expiry_time = $ad_expiry_month;
+            // change duration to one month
+            $duration = 1;
         }
         
         if($auto_renew == "false"){
@@ -87,6 +91,7 @@ class adsController extends Controller
             "link" => $link,
             "ad_expiry" =>$ad_expiry_time,
             "ad_type" => $ad_type,
+            "duration" => $duration,
             "auto_renew" =>$auto_renew
          ];
          try{
@@ -107,27 +112,44 @@ class adsController extends Controller
     
     // retrieve inbuilt global ads
     public function inbuiltGlobal(){
-        $advertisements = Advert::where("ad_type" ,"inbuilt")
-        ->where("global",true) ->get();
-        $complete_ad =[];
-        foreach($advertisements as $advertisement){
-            $ad_media = $advertisement->ad_media;
-            $user = User::where("id",$advertisement->ad_owner_id) ->first();
-            $advertisement->ad_media = $ad_media;
-            $expiry_date = Carbon::parse($advertisement->ad_expiry);
-            $advertisement -> name = $user ->name;
-            $advertisement -> profile = $user ->profile;
-            $date_created = Carbon::parse($advertisement->created_at)->format("d-M-Y");
-            $advertisement -> date_created = $date_created;
-            $is_in_the_future = $expiry_date->isFuture();
-            if($is_in_the_future){
-             $complete_ad[] = $advertisement;    
-            } 
+        try{
+            $advertisements = Advert::where("ad_type" ,"inbuilt")
+                    ->where("global",true) ->get();
+                    $complete_ad =[];
+                    foreach($advertisements as $advertisement){
+                        $ad_media = $advertisement->ad_media;
+                        $user = User::where("id",$advertisement->ad_owner_id) ->first();
+                        if ($user) {
+                            $advertisement->ad_media = $ad_media;
+                            $expiry_date = Carbon::parse($advertisement->ad_expiry);
+                            $advertisement->user_name = $user->name;
+                            $advertisement->profile = $user->profile;
+                            $date_created = Carbon::parse($advertisement->created_at)->format("d-M-Y");
+                            $advertisement->date_created = $date_created;
+                            $is_in_the_future = $expiry_date->isFuture();
+                            if ($is_in_the_future) {
+                                $complete_ad[] = $advertisement;
+                            }else{
+                                $auto_renew = $advertisement ->auto_renew;
+                                if($auto_renew){
+                                    $expiry_date = $advertisement->ad_expiry;
+                                }
+                            }
+                        }
+                    }
+                    return response() -> json([
+                        "success"=> true,
+                        "data"=> $complete_ad
+                        ]);            
+        }catch(\Throwable $th){
+            return response() -> json([
+                "error"=> $th -> getMessage(),
+                "success"=> false,
+                "user" => $user,
+                "adverts" => $advertisement
+                ]);
         }
-        return response() -> json([
-            "success"=> true,
-            "data"=> $complete_ad
-            ]);
+        
     }
     
     

@@ -14,6 +14,7 @@ use Dotenv\Exception\ValidationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class postController extends Controller
 {
@@ -22,6 +23,8 @@ class postController extends Controller
         try {
             $postData = $request->validate([
                 "post_description"=>"required",
+                'post_sensitive'=>"required",
+                'post_tags' =>"required"
             ]);
         } catch(ValidationException $valExe) {
             return response() -> json([
@@ -33,7 +36,11 @@ class postController extends Controller
         
         // type 3 are post with no image ,1 are post with video
         // and 2 are post with images The default post is type 3
-        
+        $sensitive = false;
+        $is_sensitive = $postData['post_sensitive'];
+        if($is_sensitive == "true"){
+            $sensitive = true;
+        }
         $type =3;
         $user = Auth::user();
         $id = $user -> id;
@@ -46,6 +53,8 @@ class postController extends Controller
                 'post_description' => $postData['post_description'],
                 'post_owner_id' => $id,
                 'post_media' =>null,
+                'post_sensitive'=>$sensitive,
+                'post_tags' =>$postData['post_tags'],
                 'media_type' => $type
             ]);
             Notification::create([
@@ -90,13 +99,23 @@ class postController extends Controller
             $filepath= "videos/".$newFilename;   
         }
         $disk = Storage::disk('s3');
-        $disk->put($filepath,file_get_contents($media_file),'public');
+        try{
+          $disk->put($filepath,file_get_contents($media_file),'public');  
+        } catch(Throwable $th){
+            return response() ->json([
+                "success" => false,
+                "message" => "check your internet connection and try again"
+            ]);
+        }
+        
         $newPath = $disk -> url($filepath);
         // insert to the database
             Post::create([
                 'post_description' => $postData['post_description'],
                 'post_owner_id' => $id,
                 'post_media' => $newPath,
+                'post_sensitive'=>$sensitive,
+                'post_tags' =>$postData['post_tags'],
                 'media_type' => $type
             ]);
             Notification::create([

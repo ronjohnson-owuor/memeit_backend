@@ -24,7 +24,12 @@ class User extends Authenticatable
         'gender',
         'phone',
         'status',
-        'profile'
+        'profile',
+        'verified',
+        'school',
+        'premium_user',
+        'premium_expiry',
+        'profile_for_public'
     ];
 
     /**

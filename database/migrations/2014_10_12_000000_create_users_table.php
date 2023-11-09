@@ -19,7 +19,12 @@ return new class extends Migration
             $table->string('password');
             $table->string('gender');
             $table->string('phone');
+            $table->string('school');
+            $table->boolean('premium_user');
+            $table->timestamp("premium_expiry")->nullable();
+            $table->boolean('profile_for_public');
             $table->string('status');
+            $table->boolean('verified');
             $table->text('profile');
             $table->rememberToken();
             $table->timestamps();

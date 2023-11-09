@@ -13,6 +13,8 @@ class Post extends Model
         'post_description',
         'post_owner_id',
         'post_media',
-        'media_type'
+        'media_type',
+        'post_sensitive',
+        'post_tags'
     ];
 }

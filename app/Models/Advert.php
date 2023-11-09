@@ -17,6 +17,7 @@ class Advert extends Model
         "link",
         "ad_expiry",
         "ad_type",
-        "auto_renew"
+        "auto_renew",
+        "duration"
     ];
 }

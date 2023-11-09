@@ -82,20 +82,34 @@ class userController extends Controller
             "phone"=>"required",
             "gender"=>"required",
             "status"=>"required",
+            "school" =>"required",
+            "public" => "required",
             "profile"=>"required|mimes:jpg,png,jpeg|file",
             "password"=>"required"
         ]);
     }catch(ValidationException $err) {
         return response() -> json([
-            'message' => 'unable to signin check input fields',
+            'message' =>'check your input fields',
             'success' => false
         ]);
     }
-    
+    $profile_can_be_public = false;
+    $profile_type =$userData['public'];
+    if($profile_type == "true"){
+        $profile_can_be_public = true;
+    }
     $image_to_be_uploaded = $request->file('profile');
     $newFilename = time() .'memeit'.'.'.$image_to_be_uploaded->getClientOriginalExtension();
     $filePath = "profiles/".$newFilename;
-    Storage::disk('s3')->put($filePath,file_get_contents($image_to_be_uploaded),'public');
+    try{
+    Storage::disk('s3')->put($filePath,file_get_contents($image_to_be_uploaded),'public');        
+    }catch(\Throwable $th){
+        return response() ->json([
+            "success" => false,
+            "message" =>"check your internet and try again"
+        ]);
+    }
+
     $path = Storage::disk('s3')->url($filePath);
     $protected_password = bcrypt($userData['password']);
     $user = User::create([
@@ -103,9 +117,13 @@ class userController extends Controller
         'email' =>  $userData['email'],
         'password' => $protected_password,
         'phone' => $userData['phone'],
+        'school' => $userData['school'],
         'gender' => $userData['gender'],
         'status' => $userData['status'],
-        'profile' => $path
+        'profile_for_public' =>$profile_can_be_public,
+        'profile' => $path,
+        "verified" => false,
+        "premium_user" => false
     ]);
     
 

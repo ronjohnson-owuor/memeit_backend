@@ -46,7 +46,15 @@ class adsController extends Controller
         $file_ext = $ad_file->getClientOriginalExtension();
         $newFilename = time() .'memeitfilesassets'.'.'.$file_ext;
         $filePath = "advertisements/".$newFilename;
-        Storage::disk('s3')->put($filePath,file_get_contents($ad_file),'public');
+        try{
+        Storage::disk('s3')->put($filePath,file_get_contents($ad_file),'public');    
+        } catch(\Throwable $th){
+            return  response() ->json([
+                "message" => " your internet is weak",
+                "success" => false
+            ]);
+        }
+        
         $path = Storage::disk('s3')->url($filePath);
         
         $ad_heading = $request -> ad_heading;
@@ -100,7 +108,8 @@ class adsController extends Controller
             return response() -> json([
                 "error"=> $error -> getMessage(),
                 "success" => false,
-                "data_to_db" => $data_to_db
+                "data_to_db" => $data_to_db,
+                "message" => "ad not created"
             ]);
          }
         return response() ->json([

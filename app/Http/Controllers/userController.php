@@ -112,6 +112,14 @@ class userController extends Controller
 
     $path = Storage::disk('s3')->url($filePath);
     $protected_password = bcrypt($userData['password']);
+    $bio_arrrays = [
+        "Hey there I am using machizi👋",
+        "machizi forever.no tiktok just machizi",
+        "me and my friends love machizi",
+        "I am using machizi what about you🤔",
+        
+    ];
+    $selected_bio = collect($bio_arrrays) -> random();
     $user = User::create([
         'name' => $userData['name'],
         'email' =>  $userData['email'],
@@ -123,7 +131,8 @@ class userController extends Controller
         'profile_for_public' =>$profile_can_be_public,
         'profile' => $path,
         "verified" => false,
-        "premium_user" => false
+        "premium_user" => false,
+        "bio" => $selected_bio
     ]);
     
 
@@ -231,6 +240,19 @@ class userController extends Controller
         }
         /* START */
         $posts = Post::where("post_owner_id",$id)->orderBy('id', 'DESC')->get();
+        $following = Follower::where("master_id",$id)->get();
+        $following_profiles = [];
+        if($following){
+            foreach ($following as $follow){
+                $user = User::where("id",$follow->follower_id)->first();
+                $follower_data = (Object)[
+                    "id" => $user ->id,
+                    "profile" => $user ->profile,
+                    "name" => $user -> name
+                ];
+                  $following_profiles[]=$follower_data;
+            }  
+        }
         $followers = Follower::where("master_id",$id)->count();
         $all_post = [];
         foreach ($posts as $post) {
@@ -247,6 +269,7 @@ class userController extends Controller
                     'user_name' => $user_who_commented ->name,
                     'profile' => $user_who_commented->profile,
                     'user_comment' => $comment->comment,
+                    'user_id' => $user_who_commented -> id,
                     "created_at" =>$comment_created_at
                 ];
                 $all_comments_of_a_post[]=$complete_comment;
@@ -266,6 +289,7 @@ class userController extends Controller
                 'post_description' => $post->post_description,
                 'post_media' => $media_path,
                 'id' =>$post ->id,
+                'user_id' =>$user->id,
                 'media_type' => $post ->media_type,
                 'likes' => $likes,
                 'comments' => $all_comments_of_a_post
@@ -278,6 +302,8 @@ class userController extends Controller
             "profile" =>$user->profile,
             "status" =>$user->status,
             "followers" =>$followers,
+            "followers_profiles"=>$following_profiles,
+            'bio' => $user ->bio,
             "user_post" =>$all_post
         ];
         return response() ->json([
@@ -294,7 +320,22 @@ class userController extends Controller
         /* START */
         $posts = Post::where("post_owner_id",$id)->orderBy('id', 'DESC')->get();
         $followers = Follower::where("master_id",$id)->count();
+        $followers_profile = Follower::where("master_id",$id)->get();
+        $followingprofiles = [];
         $all_post = [];
+        
+        if($followers_profile){
+            foreach ($followers_profile as $follow){
+                $follower_id = $follow->follower_id;
+                $user_following = User::where("id",intval($follower_id)) ->first();
+                $follower_data = (Object)[
+                    "id" => $user_following ->id,
+                    "profile" => $user_following ->profile,
+                    "name" => $user_following -> name,
+                ];
+                  $followingprofiles[]=$follower_data;
+            }  
+        }
         
         
         foreach ($posts as $post) {
@@ -309,6 +350,7 @@ class userController extends Controller
                 $user_who_commented = User::where('id',$comment->user_id)->first(); 
                 $complete_comment = (Object)[
                     'user_name' => $user_who_commented ->name,
+                    'user_id' => $user_who_commented -> user_id,
                     'profile' => $user_who_commented->profile,
                     'user_comment' => $comment->comment,
                     "created_at" =>$comment_created_at
@@ -327,6 +369,7 @@ class userController extends Controller
                 'user_name' => 'You',
                 "created_at" =>$post_created_at,
                 'profile' => $user->profile,
+                'user_id'=> $user->id,
                 'post_description' => $post->post_description,
                 'post_media' => $media_path,
                 'id' =>$post ->id,
@@ -341,11 +384,14 @@ class userController extends Controller
         $user = (Object)[
             "name" =>$user->name,
             "email" =>$user->email,
+            "id"=>$id,
             "profile" =>$user->profile,
             "status" =>$user->status,
             "gender" =>$user ->gender,
             "phone" =>$user->phone,
             "followers" =>$followers,
+            "followers_profiles" =>$followingprofiles,
+            'bio' => $user ->bio,
             "user_post" =>$all_post
         ];
         return response() ->json([
@@ -429,7 +475,28 @@ class userController extends Controller
         ]); 
     }
     
-    
+    function updateBio(Request $request){
+        $user = Auth::user();
+        $data = $request -> validate([
+            "bio" => "required"
+        ]);
+        
+        $to_be_updated = [
+            "bio" => $data["bio"]
+        ];
+        
+        $user -> update($to_be_updated);
+        Notification::create([
+            "master_id"=>$user->id,
+            "message"=>"bio updated 😎",
+            "read" => false
+            ]);
+            return response()->json([
+                "message"=> "bio updated",
+                "success"=>true
+            ]);
+        
+    }
     
      
 }

@@ -29,7 +29,8 @@ class User extends Authenticatable
         'school',
         'premium_user',
         'premium_expiry',
-        'profile_for_public'
+        'profile_for_public',
+        'bio'
     ];
 
     /**

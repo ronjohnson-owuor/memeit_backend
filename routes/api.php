@@ -46,6 +46,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get("/get-user", [UserController::class, 'getUser']);
     Route::post("/manage-followers", [followerController::class, 'managefollowing']);
     Route::post("/basic-profile-edit", [userController::class, 'basicprofileedit']);
+    Route::post("/bio-edit", [userController::class, 'updateBio']);
     Route::post("/update-password", [userController::class, 'updatepassword']);
     Route::post("/update-profile", [userController::class, 'updateprofile']);
     

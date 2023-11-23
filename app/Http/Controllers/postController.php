@@ -18,6 +18,7 @@ use Throwable;
 
 class postController extends Controller
 {
+    
     // add post to the database
     public function addpost(Request $request){
         try {
@@ -46,7 +47,7 @@ class postController extends Controller
         $id = $user -> id;
         $media_file = $request->file('post_media');
         // if media file is not availlable or equal to null
-        /* thats means thats a type three media type hence no metadata
+        /* thats means that's a type three media type hence no metadata
          required */
         if(!$media_file){
             Post::create([

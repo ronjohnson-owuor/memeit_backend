@@ -21,6 +21,9 @@ class postController extends Controller
     
     // add post to the database
     public function addpost(Request $request){
+        
+        
+        
         try {
             $postData = $request->validate([
                 "post_description"=>"required",
@@ -34,9 +37,11 @@ class postController extends Controller
                 'error' => $valExe
             ]);
         }
+
+        
         
         // type 3 are post with no image ,1 are post with video
-        // and 2 are post with images The default post is type 3
+        // and 2 are post with images The default post is type 3.
         $sensitive = false;
         $is_sensitive = $postData['post_sensitive'];
         if($is_sensitive == "true"){
@@ -48,29 +53,36 @@ class postController extends Controller
         $media_file = $request->file('post_media');
         // if media file is not availlable or equal to null
         /* thats means that's a type three media type hence no metadata
-         required */
+        required */
+        
+        
+        
+        /* insert or create post with no image or any video in it 
+        this does so. */
+        $post_description =  $postData['post_description'];
+        $post_tags = $postData['post_tags'];
         if(!$media_file){
             Post::create([
-                'post_description' => $postData['post_description'],
+                'post_description' =>$post_description,
                 'post_owner_id' => $id,
                 'post_media' =>null,
                 'post_sensitive'=>$sensitive,
-                'post_tags' =>$postData['post_tags'],
+                'post_tags' =>$post_tags,
                 'media_type' => $type
             ]);
             Notification::create([
-                "master_id" =>$id,
-                "message"=>"your post has been created👍",
-                "read" =>false
-                
+`                "master_id" =>$id,
+                "message"=>"your post has been created.",
+                "read" =>false`
             ]);
             return response() -> json([
                 'message' => 'post created',
-                'success' => true,
+                'success' => true
             ]); 
         }
+
         
-        
+
         // check if the extention is a video or a image because only these to formarts are supported
         //path to save the video eg if its a video then /videos and images /images
         $path='';
@@ -83,14 +95,17 @@ class postController extends Controller
                 $path=1;
                 $type=1;
             }else{
-                // if the video is not an image or a video then the user is trying to 
-                /* upload an unsupported video formart to the database */
+            // if the video is not an image or a video then the user is trying to 
+            /* upload an unsupported video formart to the database */
                 return response() ->json([
                     "message" => "unsupported formart",
                     "success" =>false
                 ]);
             }
         }
+        
+        
+        
         // set the path respectively to the media type
         $file_ext = $media_file->getClientOriginalExtension();
         $newFilename = time() .'memeitfilesassets'.'.'.$file_ext;
@@ -101,41 +116,56 @@ class postController extends Controller
         }
         $disk = Storage::disk('s3');
         try{
-          $disk->put($filepath,file_get_contents($media_file),'public');  
+            $disk->put($filepath,file_get_contents($media_file),'public');  
         } catch(Throwable $th){
             return response() ->json([
                 "success" => false,
-                "message" => "check your internet connection and try again"
+                "message" => "check your internet connection and try again and try again"
             ]);
         }
-        
+        /* generate path for video or image after saving the image/video to the database */
         $newPath = $disk -> url($filepath);
+        
+        
+        
         // insert to the database
-            Post::create([
-                'post_description' => $postData['post_description'],
-                'post_owner_id' => $id,
-                'post_media' => $newPath,
-                'post_sensitive'=>$sensitive,
-                'post_tags' =>$postData['post_tags'],
-                'media_type' => $type
-            ]);
-            Notification::create([
-                "master_id" =>$id,
-                "message"=>"your post has just been created👍",
-                "read" =>false
-                
-            ]);
+        Post::create([
+            'post_description' => $postData['post_description'],
+            'post_owner_id' => $id,
+            'post_media' => $newPath,
+            'post_sensitive'=>$sensitive,
+            'post_tags' =>$postData['post_tags'],
+            'media_type' => $type
+        ]);
+        
+        
+        
+        Notification::create([
+            "master_id" =>$id,
+            "message"=>"your post has just been created.",
+            "read" =>false
+
+        ]);
+        
+        
+        
         // return response
         return response() -> json([
             'message' => 'post created successfully',
-            'success' => true,
+            'success' => true
         ]);  
     }
     
     
     
+    
+    
+    
     // delete post
     public function deletepost(Request $request){
+        
+        
+        /* get id of the post to be deleted */
         try {
             $postData = $request->validate([
                 "post_id"=>"required",
@@ -148,21 +178,24 @@ class postController extends Controller
             ]);
         }
         
+        
+        /* authenticate the user trying to delete the post from the database and get his it */
         $user = Auth::user();
         $user_id = $user -> id;
-        $post_to_be_deleted = Post::where('id',$postData['post_id'])
+        $post_id =$postData['post_id'];
+        $post_to_be_deleted = Post::where('id',$post_id)
         ->where('post_owner_id',$user_id)->first();
-        
-        $likes_to_be_deleted = Like::where("post_id",$postData['post_id'])->get();
-        $comments_to_be_deleted = Comment::where("post_id",$postData['post_id'])->get();
-        $reports_to_be_deleted =  Report::where("video_id",$postData['post_id'])->get();
-        
+        $likes_to_be_deleted = Like::where("post_id",$post_id)->get();
+        $comments_to_be_deleted = Comment::where("post_id",$post_id)->get();
+        $reports_to_be_deleted =  Report::where("video_id",$post_id)->get();
+        /* if the post is not found then tell the user so  */
         if(!$post_to_be_deleted){
             return response() -> json([
                 'message' => 'unable to delete post',
                 'success' => false,
             ]);
         }
+        
         
         
         /* delete all likes */
@@ -172,6 +205,8 @@ class postController extends Controller
             }
         }
         
+        
+        
         // delete all comments related to the post
         if($comments_to_be_deleted) {
             foreach ($comments_to_be_deleted as $comments) {
@@ -179,26 +214,38 @@ class postController extends Controller
             }
         }
         
-        /* delete reports if any */
+        
+        
+        
+        /* delete reports if any =>reports are when a user reports the content of another user */
         if($reports_to_be_deleted){
             foreach ($reports_to_be_deleted as $report) {
                 $report->delete();
             }
         }
         
+        
+        
+        
         /* delete the actual post now */
         $post_to_be_deleted->delete();
         Notification::create([
             "master_id" =>$user_id,
-            "message"=>"🚮you deleted a post",
+            "message"=>"post deleted.Do you want to add one more.",
             "read" =>false
             
         ]);
+        
+        
+        
         return response() -> json([
             'message' => 'post deleted',
             'success' => true,
         ]);
     }
+    
+    
+    
     
     
     
@@ -244,60 +291,73 @@ class postController extends Controller
     }
     
     
+    
+    
+    
+    
+    
     // retrieve all post and their comments and likes
     public function retrievepost(){
         $posts = Post::orderBy('id', 'DESC')->get();
         $all_post = [];
         if($posts){
             foreach ($posts as $post) {
-            $post_created_at  = Carbon::parse($post->created_at)->format("d-M-Y");
-            $all_comments_of_a_post =[];
-            $user = User::where('id',$post->post_owner_id)->first();
-            // add likes and comments here too
-            $likes= Like::where('post_id',$post->id)->count();
-            $comments= Comment::where('post_id',$post->id)->get();
-            /* Loop through the comment to edit it properly*/
-            if($comments){
-                foreach ($comments as $comment) {
-                $user_who_commented = User::where('id',$comment->user_id)->first(); 
-                $comment_created_at  = Carbon::parse($comment->created_at)->format("d-M-Y");
-                $complete_comment = (Object)[
-                    'user_name' => $user_who_commented ->name,
-                    "user_id"=>$comment->user_id,
-                    "created_at"=> $comment_created_at,
-                    'profile' =>$user_who_commented->profile,
-                    'user_comment' => $comment->comment
-                ];
-                $all_comments_of_a_post[]=$complete_comment;
-            }  
-            }
+                $post_created_at  = Carbon::parse($post->created_at)->format("d-M-Y");
+                $all_comments_of_a_post =[];
+                $user = User::where('id',$post->post_owner_id)->first();
+                // add likes and comments here too
+                $likes= Like::where('post_id',$post->id)->count();
+                $comments= Comment::where('post_id',$post->id)->get();
+                /* Loop through the comment to edit it properly*/
+                if($comments){
+                    foreach ($comments as $comment) {
+                        $user_who_commented = User::where('id',$comment->user_id)->first(); 
+                        $comment_created_at  = Carbon::parse($comment->created_at)->format("d-M-Y");
+                        $complete_comment = (Object)[
+                            'user_name' => $user_who_commented ->name,
+                            "user_id"=>$comment->user_id,
+                            "created_at"=> $comment_created_at,
+                            'profile' =>$user_who_commented->profile,
+                            'user_comment' => $comment->comment
+                        ];
+                        $all_comments_of_a_post[]=$complete_comment;
+                    }  
+                }
 
-            $media_path =null;
-            if($post->media_type){
-                $media_path = $post->post_media;
-            }
-            
-            $complete_post = (Object)[
-                'user_name' => $user ->name,
-                "user_id"=>$user->id,
-                "id" => $post->id,
-                'profile' =>$user->profile,
-                "created_at"=> $post_created_at,
-                'post_description' => $post->post_description,
-                'post_sensitive'=>$post->post_sensitive,
-                'post_media' => $media_path,
-                'media_type' => $post ->media_type,
-                'likes' => $likes,
-                'comments' => $all_comments_of_a_post
-            ];
-            $all_post[]=$complete_post;
+                
+                
+                
+                $media_path =null;
+                if($post->media_type){
+                    $media_path = $post->post_media;
+                }
+                
+                
+                
+                $complete_post = (Object)[
+                    'user_name' => $user ->name,
+                    "user_id"=>$user->id,
+                    "id" => $post->id,
+                    'profile' =>$user->profile,
+                    "created_at"=> $post_created_at,
+                    'post_description' => $post->post_description,
+                    'post_sensitive'=>$post->post_sensitive,
+                    'post_media' => $media_path,
+                    'media_type' => $post ->media_type,
+                    'likes' => $likes,
+                    'comments' => $all_comments_of_a_post
+                ];
+                $all_post[]=$complete_post;
         }
-                return response() -> json([
+        return response() -> json([
             'message' => 'post retrieved',
             'success' => true,
             'data'=>$all_post
         ]);
         }
+        
+        
+        
         return response() -> json([
             'message' => 'post retrieved',
             'success' => true,
@@ -305,6 +365,11 @@ class postController extends Controller
         ]);
  
     }
+    
+    
+    
+    
+    
     
     
     public function recommended_post(){
@@ -316,55 +381,68 @@ class postController extends Controller
         // get users where user is not already following
         $recommended_post = Post::whereIn('post_owner_id', $followers_list)->orderBy('id','DESC')->get();
         
+        
+        
+        
         if($recommended_post){
             foreach ($recommended_post as $post) {
-            $post_created_at  = Carbon::parse($post->created_at)->format("d-M-Y");
-            $all_comments_of_a_post =[];
-            $user = User::where('id',$post->post_owner_id)->first();
-            // add likes and comments here too
-            $likes= Like::where('post_id',$post->id)->count();
-            $comments= Comment::where('post_id',$post->id)->get();
-            /* Loop through the comment to edit it properly*/
-            if($comments){
-                foreach ($comments as $comment) {
-                $user_who_commented = User::where('id',$comment->user_id)->first(); 
-                $comment_created_at  = Carbon::parse($comment->created_at)->format("d-M-Y");
-                $complete_comment = (Object)[
-                    'user_name' => $user_who_commented ->name,
-                    "user_id"=>$comment->user_id,
-                    "created_at"=> $comment_created_at,
-                    'profile' =>$user_who_commented->profile,
-                    'user_comment' => $comment->comment
-                ];
-                $all_comments_of_a_post[]=$complete_comment;
-            }  
-            }
+                $post_created_at  = Carbon::parse($post->created_at)->format("d-M-Y");
+                $all_comments_of_a_post =[];
+                $user = User::where('id',$post->post_owner_id)->first();
+                // add likes and comments here too
+                $likes= Like::where('post_id',$post->id)->count();
+                $comments= Comment::where('post_id',$post->id)->get();
+                /* Loop through the comment to edit it properly*/
+                if($comments){
+                    foreach ($comments as $comment) {
+                        $user_who_commented = User::where('id',$comment->user_id)->first(); 
+                        $comment_created_at  = Carbon::parse($comment->created_at)->format("d-M-Y");
+                        $complete_comment = (Object)[
+                            'user_name' => $user_who_commented ->name,
+                            "user_id"=>$comment->user_id,
+                            "created_at"=> $comment_created_at,
+                            'profile' =>$user_who_commented->profile,
+                            'user_comment' => $comment->comment
+                        ];
+                        $all_comments_of_a_post[]=$complete_comment;
+                    }  
+                }
 
-            $media_path =null;
-            if($post->media_type){
-                    $media_path =$post->post_media;
-            }
-            $complete_post = (Object)[
-                'user_name' => $user ->name,
-                "user_id"=>$user->id,
-                "id" => $post->id,
-                'profile' => $user->profile,
-                "created_at"=> $post_created_at,
-                'post_description' => $post->post_description,
-                'post_sensitive'=>$post->post_sensitive,
-                'post_media' => $media_path,
-                'media_type' => $post ->media_type,
-                'likes' => $likes,
-                'comments' => $all_comments_of_a_post
-            ];
-            $all_post[]=$complete_post;
+                
+                
+                
+                $media_path =null;
+                if($post->media_type){
+                        $media_path =$post->post_media;
+                }
+                
+                
+                
+                $complete_post = (Object)[
+                    'user_name' => $user ->name,
+                    "user_id"=>$user->id,
+                    "id" => $post->id,
+                    'profile' => $user->profile,
+                    "created_at"=> $post_created_at,
+                    'post_description' => $post->post_description,
+                    'post_sensitive'=>$post->post_sensitive,
+                    'post_media' => $media_path,
+                    'media_type' => $post ->media_type,
+                    'likes' => $likes,
+                    'comments' => $all_comments_of_a_post
+                ];
+                $all_post[]=$complete_post;
         }
         return response() -> json([
             'message' => 'post retrieved',
             'success' => true,
             'data'=>$all_post
-        ]); 
+        ]);
+         
         }
+        
+        
+        
         
         return response() -> json([
             'message' => 'post retrieved',
@@ -373,6 +451,10 @@ class postController extends Controller
         ]); 
 
     }
+    
+    
+    
+    
     
     
     // Like and unlike post 
@@ -388,14 +470,16 @@ class postController extends Controller
                 'error' => $valExe
             ]);
         }
+        
+        
+        
         $user = Auth::user();
         $user_id = $user -> id;
         $post_id=$postData['post_id'];
         $post_to_be_liked = Like::where('post_id',$post_id)->where('user_id',$user_id)->first();
-        
         if(!$post_to_be_liked){
             Like::create([
-                'post_id' =>$postData['post_id'],
+                'post_id' =>$post_id,
                 'user_id' => $user_id
             ]);
             return response() -> json([
@@ -403,8 +487,10 @@ class postController extends Controller
                 'success' =>true,
             ]);
         }
-        
         $post_to_be_liked->delete();
+        
+        
+        
         return response() -> json([
             'message' => 'you unliked this post',
             'success' => true
@@ -413,8 +499,13 @@ class postController extends Controller
     
     
     
+    
+    
+    
+    
     // comment on a post
     public function commentpost(Request $request){
+    
         try {
             $postData = $request->validate([
                 "post_id" =>"required",
@@ -427,11 +518,16 @@ class postController extends Controller
                 'error' => $valExe
             ]);
         }
+        
+        
+        
         $user = Auth::user();
         $user_id = $user -> id;
+        $post_id=$postData['post_id'];
+        $post_comment=$postData['comment'];
             Comment::create([
-                'post_id' =>$postData['post_id'],
-                "comment" =>$postData['comment'],
+                'post_id' =>$post_id,
+                "comment" =>$post_comment,
                 'user_id' => $user_id
             ]);
             return response() -> json([
@@ -439,6 +535,10 @@ class postController extends Controller
                 'success' =>true,
             ]);
     }
+    
+    
+    
+    
     
     
     // delete comment
@@ -454,6 +554,9 @@ class postController extends Controller
                 'error' => $valExe
             ]);
         }
+        
+        
+        
         $user = Auth::user();
         $user_id = $user -> id;
         $comment_id=$postData['comment_id'];
@@ -461,12 +564,15 @@ class postController extends Controller
         ->where('user_id',$user_id)->first();
         if(!$comment_to_be_deleted){
             return response() -> json([
-                'message' => 'un able to delete comment',
+                'message' => 'unable to delete comment',
                 'success' => false,
             ]); 
         }
-        
         $comment_to_be_deleted->delete();
+        
+        
+        
+        /* return success if the comments are deleted */
             return response() -> json([
                 'message' => 'comment deleted',
                 'success' =>true,

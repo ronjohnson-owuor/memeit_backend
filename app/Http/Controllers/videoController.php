@@ -28,9 +28,14 @@ class videoController extends Controller
                 "success" =>false
             ]);   
         }
-        $post_reported = Post::where('id',$video['id']) ->first();
+        
+        
+        
+        $video_id = $video['id'];
+        $issue =$video['issue'];
+        $post_reported = Post::where('id',$video_id) ->first();
         $video_owner = $post_reported ->post_owner_id;
-        $video_link = asset("videos/".$post_reported->post_media);
+        $video_link = asset($post_reported->post_media);
         
         if($video_owner == $reporter_id){
             return response() ->json([
@@ -39,11 +44,11 @@ class videoController extends Controller
             ]);
         }
         Report::create([
-            "video_id" =>$video["id"],
+            "video_id" =>$video_id,
             "video_owner" => $video_owner,
             "reporter_id" =>$reporter_id,
             "video_link" =>$video_link,
-            "issue" =>$video['issue']
+            "issue" =>$issue
         ]);
         // notify the video owner
         $message = "one of your video has been reported to us you can view it in your profile";
@@ -68,7 +73,7 @@ class videoController extends Controller
         $final_report_to_client=[];
         foreach ($reported_videos as $reported_video) {
             $reporter = User::where('id',$reported_video->reporter_id)->first();
-            $reporter_profile =  asset("profiles/".$reporter->profile);
+            $reporter_profile = $reporter->profile;
             $video = $reported_video->video_link;
             $reason = $reported_video->issue;
             $reporter_number=$reporter->phone;
@@ -102,7 +107,7 @@ class videoController extends Controller
         $final_report_to_client=[];
         foreach ($reported_videos as $reported_video) {
             $reporter = User::where('id',$reported_video->reporter_id)->first();
-            $reporter_profile =  asset("profiles/".$reporter->profile);
+            $reporter_profile =  $reporter->profile;
             $video = $reported_video->video_link;
             $reason = $reported_video->issue;
             $reporter_number=$reporter->phone;

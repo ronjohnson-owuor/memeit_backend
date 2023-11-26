@@ -35,6 +35,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post("/active-expired-ad", [adsController::class, 'active_expired_ads']);
     Route::post("/report-video", [videoController::class, 'reportVideo']);
     Route::post("/retrieve-reported-videos", [videoController::class, 'videos_for_the_reporter']);
+    Route::post("/my-reported-videos", [videoController::class, 'retrieveReportedvideos']);
     Route::post("/drop-charges", [videoController::class, 'drop_charges']);
     Route::post("/edit-post", [postController::class, 'editpost']);
     Route::post("/retrieve-notification", [notificationController::class, 'getnotification']);

@@ -26,30 +26,32 @@ class followerController extends Controller
             ]);
         } 
         $user = Auth::user();
+        $master_id = $postData['master_id'];
+        $person_being_followed_name = User::where("id",$master_id) ->pluck("name")->first();
         $id = $user -> id;
-        $is_following = Follower::where('master_id',$postData['master_id'])
+        $is_following = Follower::where('master_id',$master_id)
         ->where('follower_id',$id)->first();
         
         if(!$is_following){
             Follower::create([
-                "master_id" =>$postData['master_id'],
+                "master_id" =>$master_id,
                 "follower_id" => $id
             ]);
             Notification::create([
-                "master_id" =>$postData['master_id'],
+                "master_id" =>$master_id,
                 "message"=>"new following",
                 "read" =>false
                 
             ]);
             return response() ->json([
-                "message" => "you are now following this person",
+                "message" => "you are now following  ".$person_being_followed_name,
                 "success" => true
             ]);
         }
         
         $is_following->delete();
         return response() ->json([
-            "message" => "you just unfollowed this person",
+            "message" => "you unfollowed  ".$person_being_followed_name,
             "success" => true
         ]);
     }
@@ -70,7 +72,7 @@ class followerController extends Controller
         
         return response() ->json([
             "success"=>true,
-            "message" =>"loading users..",
+            "message" =>"users loaded successfully",
             "data" =>$users
         ]);
     }

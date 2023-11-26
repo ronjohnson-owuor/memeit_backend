@@ -294,9 +294,21 @@ class userController extends Controller
         $id = $request ->master_id; //id of the user who's profile is in question.
         if(!$id){
             return response() ->json([
-                "message"=>"unable to retrieve user.try again later",
+                "message"=>"unable to this profile maybe the user deleted it or its unavailable.",
                 "success"=>false
             ]);
+        }
+        
+        
+        
+        /* authenticate the visitor of the web page */
+        $is_following = false;
+        $user_visiting_profile = Auth::user();
+        if ($user_visiting_profile) {
+            $user_visiting_profile_id = $user_visiting_profile ->id;
+            $checkIfIsFollowing = Follower::where("master_id",$id) ->
+             where("follower_id",$user_visiting_profile_id) ->first();
+             if($checkIfIsFollowing){$is_following=true;}
         }
         
         
@@ -309,12 +321,12 @@ class userController extends Controller
         // from the followers id's we create followers profiles ready fo the client if the followers id's exist
         if($following){
             foreach ($following as $follow){
-                $user = User::where("id",$follow->follower_id)->first();
+                $user_following_data = User::where("id",$follow->follower_id)->first();
                 /* we get the id image and name only  */
                 $follower_data = (Object)[
-                    "id" => $user ->id,
-                    "profile" => $user ->profile,
-                    "name" => $user -> name
+                    "id" => $user_following_data ->id,
+                    "profile" => $user_following_data ->profile,
+                    "name" => $user_following_data -> name
                 ];
                 $following_profiles[]=$follower_data;
             }  
@@ -383,6 +395,7 @@ class userController extends Controller
             'post_description' => $post->post_description,
             'post_media' => $media_path,
             'id' =>$post ->id,
+            'bio' => $user ->bio,
             'user_id' =>$user->id,
             'media_type' => $post ->media_type,
             'likes' => $likes,
@@ -403,6 +416,7 @@ class userController extends Controller
             "followers" =>$followers,
             "followers_profiles"=>$following_profiles,
             'bio' => $user ->bio,
+            "is_following" => $is_following,
             "user_post" =>$all_post
         ];
         

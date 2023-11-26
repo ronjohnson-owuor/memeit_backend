@@ -25,6 +25,7 @@ Route::post("/home-inbuilt", [adsController::class, 'inbuiltHome']);
 
 // routes that require authentication
 Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post("/get-user-profile-with-token", [UserController::class, 'getUserProfile']);
     Route::get("/follower-recommendation-with-token", [followerController::class, 'get_all_users_registered']);
     Route::get("/post-recommendation", [postController::class, 'recommended_post']);
     Route::post("/create-post", [postController::class, 'addpost']);

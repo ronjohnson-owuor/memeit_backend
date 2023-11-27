@@ -1,12 +1,13 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\adsController;
-use App\Http\Controllers\followerController;
-use App\Http\Controllers\notificationController;
 use App\Http\Controllers\postController;
 use App\Http\Controllers\userController;
 use App\Http\Controllers\videoController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\walletController;
+use App\Http\Controllers\followerController;
+use App\Http\Controllers\notificationController;
 
 
 // routes that doesnt require authentication
@@ -51,5 +52,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post("/bio-edit", [userController::class, 'updateBio']);
     Route::post("/update-password", [userController::class, 'updatepassword']);
     Route::post("/update-profile", [userController::class, 'updateprofile']);
-    
+    /* wallet apis */
+    Route::post("/deposit-money", [walletController::class, 'depositMoney']);
+    Route::post("/withdraw-money", [walletController::class, 'widthdrawMoney']);
+    Route::post("/send-money", [walletController::class, 'sendMoney']);
 });

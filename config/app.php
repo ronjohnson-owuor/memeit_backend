@@ -168,7 +168,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-        \Safaricom\Mpesa\MpesaServiceProvider::class
+        Safaricom\Mpesa\MpesaServiceProvider::class
     ])->toArray(),
 
     /*
@@ -184,7 +184,7 @@ return [
 
     'aliases' => Facade::defaultAliases()->merge([
         // 'Example' => App\Facades\Example::class,
-        'Mpesa'=> \Safaricom\Mpesa\MpesaServiceProvider::class
+        'Mpesa'=> Safaricom\Mpesa\MpesaServiceProvider::class
     ])->toArray(),
 
 ];

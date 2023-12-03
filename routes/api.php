@@ -21,6 +21,7 @@ Route::post("/global-inbuilt", [adsController::class, 'inbuiltGlobal']);
 Route::post("/global-banner", [adsController::class, 'bannerGlobal']);
 Route::post("/home-banner", [adsController::class, 'bannerHome']);
 Route::post("/home-inbuilt", [adsController::class, 'inbuiltHome']);
+Route::post("/payment-result", [walletController::class, 'callBackFunction']);
  
 
 
@@ -53,7 +54,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post("/update-password", [userController::class, 'updatepassword']);
     Route::post("/update-profile", [userController::class, 'updateprofile']);
     /* wallet apis */
-    Route::post("/deposit-money", [walletController::class, 'depositMoney']);
     Route::post("/withdraw-money", [walletController::class, 'widthdrawMoney']);
     Route::post("/send-money", [walletController::class, 'sendMoney']);
+    Route::post("/get-ballance", [walletController::class, 'getBallance']);
+    Route::post("/get-transaction", [walletController::class, 'transactionRecords']);
+    Route::post("/confirm-deposit", [walletController::class, 'depositMoney']);
+    Route::post("/generate-token", [walletController::class, 'generate_access_token']);
+    Route::post("/stk-push", [walletController::class, 'stkPush']);
 });

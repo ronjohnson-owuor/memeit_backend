@@ -74,4 +74,5 @@ class notificationController extends Controller
             "data" =>null
         ]);
     }
+    
 }
